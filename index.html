@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="my" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>2D Owner Web Ledger</title>
+  
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            slate: {
+              850: '#131c2e',
+              900: '#0b1120',
+              950: '#060a12',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'Pyidaungsu', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased p-3 sm:p-5 md:p-8">
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- PATTERN INPUT MODAL -->
+  <div id="patternModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-40 hidden items-center justify-center p-4">
+    <div class="glass-card rounded-2xl p-5 w-full max-w-md border border-slate-700/80 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 id="modalTitle" class="text-sm font-bold text-slate-200">Quick Pattern Input</h3>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-white transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-3">
+        <div id="modalNumPrefixGroup">
+          <label id="modalNumLabel" class="block text-xs font-semibold text-slate-400 mb-1">ဂဏန်း (ဥပမာ - 12 သို့မဟုတ် 5)</label>
+          <input type="text" id="modalNumInput" placeholder="" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">ထိုးကြေး ပမာဏ (Ks)</label>
+          <input type="text" id="modalAmountInput" placeholder="500" value="500" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+        </div>
+        <div id="modalReverseGroup" class="flex items-center gap-2 pt-1">
+          <input type="checkbox" id="modalReverseCheck" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0">
+          <label for="modalReverseCheck" class="text-xs text-slate-300 font-medium">R (အာ) ပါ ထည့်မည်</label>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button id="cancelModalBtn" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-xl text-xs font-semibold transition">မလုပ်တော့ပါ</button>
+        <button id="confirmModalBtn" class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-2 rounded-xl text-xs font-semibold shadow-lg shadow-brand-900/30 transition">အတည်ပြုမည်</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto space-y-5">
+
+    <!-- HEADER SECTION -->
+    <header class="glass-card rounded-2xl p-4 md:p-6 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shadow-2xl relative overflow-hidden">
+      <div class="absolute -top-12 -left-12 w-32 h-32 bg-brand-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+      <div class="flex items-center gap-3.5 z-10">
+        <div class="p-3 bg-brand-500/10 border border-brand-500/20 rounded-2xl text-brand-400 shadow-inner">
+          <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            Smart Ledger 2D
+          </h1>
+          <p class="text-xs text-slate-400 mt-0.5">Real-time Lottery Calculation Engine</p>
+        </div>
+      </div>
+
+      <div class="flex bg-slate-900/90 p-1.5 rounded-2xl w-full sm:w-auto border border-slate-800 shadow-inner z-10">
+        <button id="morningBtn" class="flex-1 sm:w-36 py-2 px-3 text-xs font-bold rounded-xl transition-all duration-300 shadow-md flex items-center justify-center gap-1.5">
+          <span>☀️</span> 12:00 PM (မနက်)
+        </button>
+        <button id="eveningBtn" class="flex-1 sm:w-36 py-2 px-3 text-xs font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5">
+          <span>🌙</span> 04:30 PM (ညနေ)
+        </button>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto z-10">
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-2.5 flex items-center gap-3 flex-1 xl:flex-initial">
+          <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i>
+          <div>
+            <label for="maxLimitInput" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Max Limit / Num</label>
+            <input type="text" id="maxLimitInput" value="5000" step="500" min="0"
+              class="bg-transparent text-amber-400 text-sm font-bold focus:outline-none w-24">
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-2.5 flex items-center gap-3 flex-1 xl:flex-initial">
+          <i data-lucide="percent" class="w-4 h-4 text-brand-400"></i>
+          <div>
+            <label for="payoutOddsInput" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Odds (x)</label>
+            <input type="text" id="payoutOddsInput" value="80" step="1" min="0"
+              class="bg-transparent text-brand-400 text-sm font-bold focus:outline-none w-16">
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- DAILY HISTORY LOG SECTION -->
+    <div class="glass-card rounded-2xl p-4 shadow-xl space-y-3 border border-slate-800">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+        <h3 class="text-xs font-bold text-slate-200 flex items-center gap-2 uppercase tracking-wider">
+          <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
+          သိမ်းဆည်းထားသော History စာရင်းများ
+        </h3>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <button id="saveHistoryBtn" class="bg-brand-600 hover:bg-brand-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-md transition active:scale-[0.98] flex items-center justify-center gap-1.5">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            ယနေ့စာရင်း သိမ်းမည်
+          </button>
+          <button id="resetNewDayBtn" class="bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-[11px] font-bold px-3 py-1.5 rounded-xl transition active:scale-[0.98] flex items-center justify-center gap-1.5" title="ယနေ့စာရင်းကို History သို့ သိမ်းပြီး စာရင်းသစ် အသစ်ပြန်စမည်">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            ရက်စွဲသစ် စတင်မည်
+          </button>
+        </div>
+      </div>
+
+      <div id="historyListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1"></div>
+    </div>
+
+    <!-- SUMMARY CARDS GRID -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-indigo-500 flex flex-col justify-between shadow-lg">
+        <div class="flex justify-between items-center text-slate-400">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Total Sales (စုစုပေါင်း)</span>
+          <i data-lucide="wallet" class="w-4 h-4 text-indigo-400"></i>
+        </div>
+        <div class="mt-3">
+          <span id="totalSalesDisplay" class="text-2xl font-black text-white">0</span>
+          <span class="text-xs text-slate-400 ml-1">Ks</span>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-emerald-500 flex flex-col justify-between shadow-lg">
+        <div class="flex justify-between items-center text-slate-400">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Retained (ဒိုင်ကိုင်)</span>
+          <i data-lucide="arrow-down-left" class="w-4 h-4 text-emerald-400"></i>
+        </div>
+        <div class="mt-3">
+          <span id="retainedDisplay" class="text-2xl font-black text-emerald-400">0</span>
+          <span class="text-xs text-slate-400 ml-1">Ks</span>
+        </div>
+      </div>
+
+      <!-- PASSED OUT CARD WITH TOGGLE & WARNING LABEL -->
+     <div id="passedOutCard" class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-amber-500 flex flex-col justify-between shadow-lg transition-all duration-300">
+     <div class="flex justify-between items-center text-slate-400">
+    <div class="flex items-center gap-2">
+      <span class="text-[11px] font-bold uppercase tracking-wider">Passed Out (အပြင်လွှဲ)</span>
+      <i data-lucide="arrow-up-right" class="w-4 h-4 text-amber-400"></i>
+    </div>
+    
+    <!-- TOGGLE SWITCH -->
+    <label class="relative inline-flex items-center cursor-pointer select-none">
+      <input type="checkbox" id="togglePassedOut" class="sr-only peer" checked>
+      <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+      <span id="passedOutStatusText" class="ml-1.5 text-[10px] font-bold text-amber-400">ON</span>
+    </label>
+    </div>
+
+    <div class="mt-3 flex items-baseline justify-between">
+    <div>
+      <span id="outListDisplay" class="text-2xl font-black text-amber-400 transition-opacity">0</span>
+      <span class="text-xs text-slate-400 ml-1">Ks</span>
+    </div>
+     </div>
+
+  <!-- သတိပေးစာ/အခြေအနေပြ Label -->
+  <div id="passedOutWarningLabel" class="mt-2 text-[10px] font-semibold text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg flex items-center gap-1">
+    <i data-lucide="info" class="w-3 h-3 shrink-0"></i>
+    <span id="warningText">အပြင်လွှဲမရှိပါက Toggle ပိတ်ထားနိုင်ပါသည်။</span>
+  </div>
+</div>
+
+      <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-rose-500 flex flex-col justify-between shadow-lg">
+        <div class="flex justify-between items-center text-slate-400">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Winning & Net Profit</span>
+          <i data-lucide="trophy" class="w-4 h-4 text-rose-400"></i>
+        </div>
+        <div class="mt-2 flex items-center justify-between gap-2">
+          <input type="text" id="winningNumberInput" placeholder="2D" maxlength="2"
+            class="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-center text-base font-black text-amber-300 w-16 focus:outline-none focus:border-brand-500 uppercase tracking-widest shadow-inner" />
+          <div class="text-right">
+            <div id="netProfitDisplay" class="text-base font-black text-slate-300">0 Ks</div>
+            <span id="netProfitLabel" class="text-[10px] text-slate-500 font-bold uppercase">Net Outcome</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPORT & BACKUP BUTTONS -->
+    <div class="flex flex-col md:flex-row gap-2.5">
+      <button id="copyOutListBtn" class="flex-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-[0.98]">
+        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+        Out-List Copy (အပြင်လွှဲစာရင်း)
+      </button>
+      <button id="copySummaryBtn" class="flex-1 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700/80 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-[0.98]">
+        <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+        စာရင်းချုပ် Copy (ဒိုင်ချုပ်)
+      </button>
+      
+      <button id="exportDataBtn" class="flex-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-[0.98]">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+        Data သိမ်းမည် (Export Backup)
+      </button>
+      <button onclick="document.getElementById('importFileInput').click()" class="flex-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 py-2.5 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-[0.98]">
+        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+        Data ပြန်သွင်းမည် (Import Backup)
+      </button>
+      <input type="file" id="importFileInput" accept=".json" style="display: none;">
+    </div>
+
+    <!-- WINNERS SECTION -->
+    <div id="winnerSection" class="bg-slate-900/90 border border-brand-500/30 rounded-2xl p-4 shadow-xl hidden">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+        <h3 class="text-xs font-black text-brand-400 flex items-center gap-2">
+          🏆 ပေါက်သူများ စာရင်းနှင့် လျော်ကြေး တွက်ချက်မှု
+        </h3>
+        <div class="flex items-center gap-3">
+          <span id="totalWinningPayout" class="text-xs font-black text-rose-400"></span>
+          <button id="copyWinnersBtn" class="bg-brand-950 hover:bg-brand-900 border border-brand-700 text-brand-300 text-[11px] px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition active:scale-[0.98]">
+            <i data-lucide="copy" class="w-3 h-3"></i> Copy ပေါက်စာရင်း
+          </button>
+        </div>
+      </div>
+      <div id="winnersContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+      <!-- LEFT COLUMN -->
+      <div class="lg:col-span-5 space-y-5">
+        <div class="glass-card rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+          <div class="flex justify-between items-center">
+            <h2 class="text-xs font-bold text-slate-200 flex items-center gap-2 uppercase tracking-wider">
+              <i data-lucide="file-text" class="w-4 h-4 text-brand-400"></i>
+              Paste Viber Message
+            </h2>
+            <button id="clearInputBtn" class="text-xs text-slate-400 hover:text-rose-400 font-semibold transition flex items-center gap-1">
+              <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Clear
+            </button>
+          </div>
+          
+          <!-- QUICK PATTERN BUTTONS -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-400 mb-2">⚡ Quick Patterns (အမြန်ထည့်ရန်)</label>
+            <div class="flex flex-wrap gap-1.5" id="quickPatternBtns">
+              <button type="button" data-pattern="အပူး" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">အပူး</button>
+              <button type="button" data-pattern="ပါဝါ" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">ပါဝါ</button>
+              <button type="button" data-pattern="နက္ခတ်" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">နက္ခတ်</button>
+              <button type="button" data-pattern="ထိတ်" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">ထိတ်</button>
+              <button type="button" data-pattern="ပိတ်" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">ပိတ်</button>
+              <button type="button" data-pattern="ဘရိတ်" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">ဘရိတ်</button>
+              <button type="button" data-pattern="ခွေ" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">ခွေ</button>
+              <button type="button" data-pattern="ခွေပူး" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">ခွေပူး</button>
+              <button type="button" data-pattern="R" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">R (အာ)</button>
+              <button type="button" data-pattern="ပတ်" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">ပတ်</button>
+              <button type="button" data-pattern="ကပ်" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">ကပ်</button>
+              <button type="button" data-pattern="ညီကို" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">ညီကို</button>
+              <button type="button" data-pattern="စုံစုံ" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">စုံ</button>
+              <button type="button" data-pattern="မမ" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">မ</button>
+              <button type="button" data-pattern="စုံမ" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">စုံမ</button>
+              <button type="button" data-pattern="မစုံ" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">မစုံ</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-400 mb-1.5">👤 ထိုးသူ / ဒိုင်ခွဲ အမည် (Optional)</label>
+            <input type="text" id="customerNameInput" placeholder="ဥပမာ - မောင်မောင် (သို့) Viber 1" 
+              class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500 shadow-inner">
+          </div>
+
+          <textarea id="viberInput" rows="6"
+            placeholder="ဥပမာ -\n12.34-500 R\n5ထိတ်-500 R\n123ခွေ-500\nအပူး-1000"
+            class="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-100 placeholder-slate-600 focus:outline-none focus:border-brand-500 transition resize-none shadow-inner leading-relaxed"></textarea>
+
+          <!-- မသိသော/မှားနေသော စာကြောင်းများ ပြင်ရန် Box -->
+          <div id="unrecognizedBox" class="bg-rose-950/40 border border-rose-500/40 rounded-xl p-3 space-y-2" style="display: none;">
+            <div class="text-[11px] font-bold text-rose-400 flex items-center gap-1.5">
+              <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+              <span>စနစ်မှ နားမလည်သော စာကြောင်းများ (ဤနေရာတွင် ပြင်ဆင်ပါ)</span>
+            </div>
+            <textarea id="unrecognizedInput" rows="3" placeholder="မှားနေသော စာကြောင်းများ..." class="w-full bg-slate-900 border border-rose-500/30 rounded-lg p-2 text-xs font-mono text-rose-200 focus:outline-none focus:border-rose-400 resize-none"></textarea>
+            <button type="button" id="reParseBtn" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> ပြင်ဆင်ပြီး ပြန်ထည့်မည်
+            </button>
+          </div>
+
+          <button id="parseBtn"
+            class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-brand-950/50 transition flex items-center justify-center gap-2 active:scale-[0.98]">
+            <i data-lucide="calculator" class="w-4 h-4"></i>
+            Parse & Calculate
+          </button>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 sm:p-5 space-y-3 shadow-xl">
+          <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+            <h3 class="text-xs font-bold text-slate-300 flex items-center gap-2 uppercase tracking-wider">
+              <i data-lucide="list-tree" class="w-4 h-4 text-indigo-400"></i>
+              Parsed Items (<span id="parsedCount" class="text-brand-400 font-mono">0</span>)
+            </h3>
+            <button id="clearAllParsedBtn" class="text-xs text-rose-400/80 hover:text-rose-400 font-bold transition hidden">
+              Clear All
+            </button>
+          </div>
+          <div id="parsedListContainer" class="max-h-[320px] overflow-y-auto space-y-2 pr-1"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="lg:col-span-7">
+        <div class="glass-card rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div>
+              <h2 class="text-xs font-bold text-slate-200 flex items-center gap-2 uppercase tracking-wider">
+                <i data-lucide="grid" class="w-4 h-4 text-brand-400"></i>
+                00 - 99 Ledger Heatmap Grid
+              </h2>
+              <p class="text-[11px] text-slate-400 mt-0.5" id="gridSessionLabel">Showing for Morning Session (12:00 PM)</p>
+            </div>
+            <div class="flex items-center gap-2.5 text-[10px] text-slate-400 font-medium flex-wrap">
+              <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-slate-900 border border-slate-800"></span> 0 Ks</div>
+              <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-950 border border-emerald-700"></span> Active</div>
+              <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-950 border border-amber-600"></span> >70%</div>
+              <div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-rose-950 border border-rose-600"></span> >Limit</div>
+            </div>
+          </div>
+          <div id="heatmapGrid" class="grid grid-cols-10 gap-1.5 sm:gap-2"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Custom Confirm Delete Modal -->
+  <div id="customConfirmModal" style="display: none;" class="fixed inset-0 z-[9999] items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-80 max-w-full shadow-2xl space-y-4 relative z-10">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+          <i data-lucide="trash-2" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-100">စာရင်းဖျက်ရန် အတည်ပြုပါ</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5">ဤ History စာရင်းကို ဖျက်ရန် သေချာပါသလား?</p>
+        </div>
+      </div>
+      
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="closeCustomDeleteModal()" class="flex-1 py-2 px-3 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition cursor-pointer">
+          မလုပ်တော့ပါ
+        </button>
+        <button type="button" id="confirmCustomDelete" class="flex-1 py-2 px-3 text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white rounded-xl transition shadow-lg shadow-rose-600/20 cursor-pointer">
+          ဖျက်မည်
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset New Day Custom Confirmation Modal -->
+  <div id="resetConfirmModal" style="display: none;" class="fixed inset-0 z-[9999] items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-80 sm:w-96 max-w-full shadow-2xl space-y-4 relative z-10">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+          <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-100">ရက်စွဲသစ် စတင်ရန် အတည်ပြုပါ</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5">ယနေ့ စာရင်းများအားလုံးကို History သို့ အလိုအလျောက် သိမ်းဆည်းပြီး စာရင်းသစ် ပြန်စမှာ သေချာပါသလား?</p>
+        </div>
+      </div>
+      
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="closeResetModal()" class="flex-1 py-2 px-3 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition cursor-pointer">
+          မလုပ်တော့ပါ
+        </button>
+        <button type="button" id="confirmResetBtn" class="flex-1 py-2 px-3 text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white rounded-xl transition shadow-lg shadow-brand-600/20 cursor-pointer">
+          အတည်ပြုမည်
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
